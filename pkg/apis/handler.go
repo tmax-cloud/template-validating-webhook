@@ -22,6 +22,9 @@ func CheckInstanceUpdatable(w http.ResponseWriter, r *http.Request) {
 		ApiVersion: "admission.k8s.io/v1beta1",
 		Response: schemas.Response{
 			Allowed: result,
+			Status: schemas.Status{
+				Reason: "TemplateInstance with the same name already exists",
+			},
 		},
 	}
 

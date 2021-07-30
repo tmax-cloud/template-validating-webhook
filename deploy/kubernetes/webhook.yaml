@@ -10,8 +10,8 @@ webhooks:
     sideEffects: None
     rules:
       - operations: ["UPDATE"]
-        apiGroups: ["tmax.io"]
-        apiVersions: ["v1"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
         resources: ["templateinstances"]
     clientConfig:
       caBundle: $(cat ca.crt | base64 | tr -d '\n')
