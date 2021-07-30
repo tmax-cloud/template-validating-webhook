@@ -35,12 +35,22 @@ func CheckInstanceUpdatable(w http.ResponseWriter, r *http.Request) {
 
 func Validate(req map[string]interface{}) bool {
 
-	request := req["request"].(map[string]interface{})
-	object := request["object"].(map[string]interface{})
-	newTemplateName := object["spec"].(map[string]interface{})["template"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+	var scope, newTemplateName, oldTemplateName string
+	object := req["request"].(map[string]interface{})["object"].(map[string]interface{})
 
-	oldObject := request["oldObject"].(map[string]interface{})
-	oldTemplateName := oldObject["spec"].(map[string]interface{})["template"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+	if object["spec"].(map[string]interface{})["clustertemplate"] != nil {
+		scope = "clustertemplate"
+		newTemplateName = object["spec"].(map[string]interface{})["clustertemplate"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+	} else {
+		scope = "template"
+		newTemplateName = object["spec"].(map[string]interface{})["template"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+	}
 
-	return newTemplateName == oldTemplateName
+	oldObject := req["request"].(map[string]interface{})["oldObject"].(map[string]interface{})
+	if oldObject["spec"].(map[string]interface{})[scope] != nil {
+		oldTemplateName = oldObject["spec"].(map[string]interface{})[scope].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+		return newTemplateName == oldTemplateName
+	}
+
+	return false
 }
