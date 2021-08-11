@@ -2,7 +2,6 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: template-validate-webhook
-  namespace: template
 webhooks:
   - name: template-validate-webhook.tmax-cloud.github.com
     admissionReviewVersions:

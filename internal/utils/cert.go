@@ -59,3 +59,11 @@ func CreateCert(ctx context.Context) error {
 
 	return nil
 }
+
+func ReadCertFile(certFile string) ([]byte, error) {
+	bytedCertFile, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+	return bytedCertFile, nil
+}
