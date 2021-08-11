@@ -5,7 +5,7 @@ metadata:
 webhooks:
   - name: template-validate-webhook.tmax-cloud.github.com
     admissionReviewVersions:
-      - v1
+      - v1beta1
     sideEffects: None
     rules:
       - operations: ["UPDATE"]
@@ -17,4 +17,4 @@ webhooks:
       service:
         namespace: template
         name: template-webhook
-        path: "/"
+        path: "/validate"

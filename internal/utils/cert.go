@@ -2,10 +2,16 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"time"
+
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certResources "knative.dev/pkg/webhook/certificates/resources"
 )
@@ -66,4 +72,32 @@ func ReadCertFile(certFile string) ([]byte, error) {
 		return nil, err
 	}
 	return bytedCertFile, nil
+}
+
+func UpdateCABundle(caCrt string) {
+	webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{}
+	s := scheme.Scheme
+
+	if err := admissionregistrationv1.AddToScheme(s); err != nil {
+		panic(err)
+	}
+	c, err := Client(client.Options{Scheme: s})
+	if err != nil {
+		panic(err)
+	}
+	if err := c.Get(context.TODO(), types.NamespacedName{Name: "template-validate-webhook", Namespace: ""}, webhook); err != nil {
+		panic(err)
+	}
+
+	updateWebhook := webhook.DeepCopy()
+	bytedCert, _ := ReadCertFile(caCrt)
+
+	// when updating CABundle field, it is automatically encoded as base64
+	if webhook != nil {
+		updateWebhook.Webhooks[0].ClientConfig.CABundle = bytedCert
+	}
+
+	if err := c.Patch(context.TODO(), updateWebhook, client.MergeFrom(webhook)); err != nil {
+		fmt.Println(err)
+	}
 }
