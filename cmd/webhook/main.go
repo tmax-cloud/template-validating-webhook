@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/tmax-cloud/template-validating-webhook/internal/utils"
 	"github.com/tmax-cloud/template-validating-webhook/pkg/apis"
-
-	"github.com/gorilla/mux"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
-	cert = utils.CertDir + "/tls.crt"
-	key  = utils.CertDir + "/tls.key"
+	cert   = utils.CertDir + "/tls.crt"
+	key    = utils.CertDir + "/tls.key"
+	caCert = utils.CertDir + "/ca.crt"
 )
 
 var log = logf.Log.WithName("template-validating-webhook")
@@ -25,7 +25,10 @@ func main() {
 	if err := utils.CreateCert(context.Background()); err != nil {
 		fmt.Println(err, "failed to create cert")
 	}
-	//TODO whenever pod restart, update CABundle of ValidatingWebhookConfiguration CRD
+
+	if err := utils.UpdateCABundle(caCert); err != nil {
+		fmt.Println(err, "Updating CaBundle is failed")
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/validate", apis.CheckInstanceUpdatable).Methods("POST")
