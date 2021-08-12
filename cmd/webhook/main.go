@@ -26,7 +26,9 @@ func main() {
 		fmt.Println(err, "failed to create cert")
 	}
 
-	utils.UpdateCABundle(caCert)
+	if err := utils.UpdateCABundle(caCert); err != nil {
+		fmt.Println(err, "Updating CaBundle is failed")
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/validate", apis.CheckInstanceUpdatable).Methods("POST")

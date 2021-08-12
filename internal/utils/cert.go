@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -74,30 +73,34 @@ func ReadCertFile(certFile string) ([]byte, error) {
 	return bytedCertFile, nil
 }
 
-func UpdateCABundle(caCrt string) {
+func UpdateCABundle(caCrt string) error {
 	webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{}
-	s := scheme.Scheme
 
+	s := scheme.Scheme
 	if err := admissionregistrationv1.AddToScheme(s); err != nil {
-		panic(err)
+		return err
 	}
 	c, err := Client(client.Options{Scheme: s})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if err := c.Get(context.TODO(), types.NamespacedName{Name: "template-validate-webhook", Namespace: ""}, webhook); err != nil {
-		panic(err)
+		return err
 	}
 
 	updateWebhook := webhook.DeepCopy()
-	bytedCert, _ := ReadCertFile(caCrt)
+	bytedCert, err := ReadCertFile(caCrt)
+	if err != nil {
+		return err
+	}
 
 	// when updating CABundle field, it is automatically encoded as base64
 	if webhook != nil {
 		updateWebhook.Webhooks[0].ClientConfig.CABundle = bytedCert
 	}
-
 	if err := c.Patch(context.TODO(), updateWebhook, client.MergeFrom(webhook)); err != nil {
-		fmt.Println(err)
+		return err
 	}
+
+	return nil
 }
