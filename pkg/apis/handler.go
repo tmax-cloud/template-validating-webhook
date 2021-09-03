@@ -36,21 +36,60 @@ func CheckInstanceUpdatable(w http.ResponseWriter, r *http.Request) {
 func Validate(req map[string]interface{}) bool {
 
 	var scope, newTemplateName, oldTemplateName string
+	var newParamNameVal, oldParamNameVal string
+	var newParameters []interface{}
+	var oldParameters []interface{}
+
 	object := req["request"].(map[string]interface{})["object"].(map[string]interface{})
 
 	if object["spec"].(map[string]interface{})["clustertemplate"] != nil {
 		scope = "clustertemplate"
 		newTemplateName = object["spec"].(map[string]interface{})["clustertemplate"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+		newParameters = object["spec"].(map[string]interface{})["clustertemplate"].(map[string]interface{})["parameters"].([]interface{})
 	} else {
 		scope = "template"
 		newTemplateName = object["spec"].(map[string]interface{})["template"].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
+		newParameters = object["spec"].(map[string]interface{})["template"].(map[string]interface{})["parameters"].([]interface{})
 	}
 
 	oldObject := req["request"].(map[string]interface{})["oldObject"].(map[string]interface{})
 	if oldObject["spec"].(map[string]interface{})[scope] != nil {
 		oldTemplateName = oldObject["spec"].(map[string]interface{})[scope].(map[string]interface{})["metadata"].(map[string]interface{})["name"].(string)
-		return newTemplateName == oldTemplateName
+		oldParameters = oldObject["spec"].(map[string]interface{})[scope].(map[string]interface{})["parameters"].([]interface{})
+	}
+	checkTemplateName := newTemplateName == oldTemplateName
+
+	newNameParam := GetNameParameterAsMap(newParameters)
+	oldNameParam := GetNameParameterAsMap(oldParameters)
+
+	if _, exist := newNameParam["NAME"]; exist {
+		newParamNameVal = newNameParam["NAME"]
+		oldParamNameVal = oldNameParam["NAME"]
+		checkParamName := newParamNameVal == oldParamNameVal
+		return checkTemplateName && checkParamName
 	}
 
-	return false
+	return checkTemplateName
+}
+
+func GetNameParameterAsMap(parameters []interface{}) map[string]string {
+	Params := []schemas.ParamSpec{}
+
+	for _, p := range parameters {
+		m := p.(map[string]interface{})
+		param := schemas.ParamSpec{}
+		if name, ok := m["name"].(string); ok {
+			param.Name = name
+		}
+		if value, ok := m["value"].(string); ok {
+			param.Value.StrVal = value
+		}
+		Params = append(Params, param)
+	}
+
+	nameParam := make(map[string]string)
+	for _, param := range Params {
+		nameParam[param.Name] = param.Value.StrVal
+	}
+	return nameParam
 }
