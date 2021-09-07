@@ -15,59 +15,7 @@ type testObj struct {
 
 func TestValidate(t *testing.T) {
 	set := []testObj{
-		{ // Case1 : new-Template cannot compare value with old-ClusterTemplate
-			admissionReview: []byte(`{
-			"kind": "AdmissionReview",
-			"request": {
-				"object": {
-					"spec" : {
-						"template": {
-							"metadata" : {
-								"name" : "new-template"},
-							"parameters": [ 
-								{
-									"name": "NAME",
-									"value": "test-name" 
-								} ] } } },
-				"oldObject": {
-					"spec" : {
-						"clustertemplate": {
-							"metadata" : {
-								"name" : "new-template"},
-							"parameters": [ 
-								{
-									"name": "NAME",
-									"value": "test-name" 
-								} ] } } } } }`),
-			result: false,
-		},
-		{ // Case2 : new-template Name != old-template Name
-			admissionReview: []byte(`{
-			"kind": "AdmissionReview",
-			"request": {
-				"object": {
-					"spec" : {
-						"template": {
-							"metadata" : {
-								"name" : "new-template"},
-							"parameters": [ 
-								{
-									"name": "NAME",
-									"value": "test-name" 
-								} ] } } },
-				"oldObject": {
-					"spec" : {
-						"template": {
-							"metadata" : {
-								"name" : "old-template"},
-							"parameters": [ 
-								{
-									"name": "NAME",
-									"value": "test-name" 
-								} ] } } } } }`),
-			result: false,
-		},
-		{ // Case3 : new-Parameter Value of "NAME" != old-Parameter Value of "NAME"
+		{ // Case1 : Create TemplateInstance for the first time (null oldObject)
 			admissionReview: []byte(`{
 				"kind": "AdmissionReview",
 				"request": {
@@ -75,33 +23,22 @@ func TestValidate(t *testing.T) {
 					"spec": {
 					  "template": {
 						"metadata": {
-						  "name": "new-template" },
-						"parameters": [ 
-							{
-								"name": "NAME",
-								"value": "new-name" 
-							},
-							{
-								"name": "IMAGE",
-								"value": "new-image" 
-							} ] } } },
-				  "oldObject": {
-					"spec": {
-					  "template": {
-						"metadata": {
-						  "name": "new-template" },
-						"parameters": [ 
-							{
-								"name": "NAME",
-								"value": "old-name"  
-							},
-							{
-								"name": "IMAGE",
-								"value": "old-image"  
-							} ] } } } } }`),
-			result: false,
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: true,
 		},
-		{ // Case4 : Template Name && Parameter "NAME" values are same
+		{ // Case2 : new-Template cannot compare value with old-ClusterTemplate
 			admissionReview: []byte(`{
 				"kind": "AdmissionReview",
 				"request": {
@@ -109,30 +46,201 @@ func TestValidate(t *testing.T) {
 					"spec": {
 					  "template": {
 						"metadata": {
-						  "name": "new-template" },
-						"parameters": [ 
-							{
-								"name": "NAME",
-								"value": "test-name" 
-							},
-							{
-								"name": "IMAGE",
-								"value": "new-image" 
-							} ] } } },
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "clustertemplate": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "clustertemplate": {
+						"objects": []
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: false,
+		},
+		{ // Case3 : new-template Name != old-template Name
+			admissionReview: []byte(`{
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  },
 				  "oldObject": {
 					"spec": {
 					  "template": {
 						"metadata": {
-						  "name": "new-template" },
-						"parameters": [ 
-							{
-								"name": "NAME",
-								"value": "test-name"  
-							},
-							{
-								"name": "IMAGE",
-								"value": "old-image"  
-							} ] } } } } }`),
+						  "name": "old-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": []
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: false,
+		},
+		{ // Case4 : new-Parameter Value of "APP_NAME" != old-Parameter Value of "APP_NAME"
+			admissionReview: []byte(`{
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "APP_NAME",
+							"value": "new-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "new-image"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "APP_NAME",
+							"value": "old-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "old-image"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": [
+						  {
+							"metadata": {
+							  "name": "${APP_NAME}"
+							}
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: false,
+		},
+		{ // Case5 : Template Name && Parameter "NAME" values are same
+			admissionReview: []byte(`{
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "new-image"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "old-image"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": [
+						  {
+							"metadata": {
+							  "name": "${NAME}"
+							}
+						  },
+						  {
+							"metadata": {
+							  "name": "NoParameter"
+							}
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
 			result: true,
 		},
 	}
