@@ -15,52 +15,232 @@ type testObj struct {
 
 func TestValidate(t *testing.T) {
 	set := []testObj{
-		{
+		{ // Case1 : Create TemplateInstance for the first time (null oldObject)
 			admissionReview: []byte(`{
-				"kind": "AdmissionReview", 
-				"request": { 
-					"object": { 
-						"spec" : { 
-							"template": { 
-								"metadata" : { 
-									"name" : "new-template"} } } }, 
-					"oldObject": { 
-						"spec" : {
-							"clustertemplate": { 
-								"metadata" : { 
-									"name" : "old-template"} } } } } }`),
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: true,
+		},
+		{ // Case2 : new-Template cannot compare value with old-ClusterTemplate
+			admissionReview: []byte(`{
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "clustertemplate": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "clustertemplate": {
+						"objects": []
+					  }
+					}
+				  }
+				}
+			  }`),
 			result: false,
 		},
-		{
+		{ // Case3 : new-template Name != old-template Name
 			admissionReview: []byte(`{
-				"kind": "AdmissionReview", 
-				"request": { 
-					"object": { 
-						"spec" : { 
-							"template": { 
-								"metadata" : { 
-									"name" : "new-template"} } } }, 
-					"oldObject": { 
-						"spec" : {
-							"template": { 
-								"metadata" : { 
-									"name" : "old-template"} } } } } }`),
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "old-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": []
+					  }
+					}
+				  }
+				}
+			  }`),
 			result: false,
 		},
-		{
+		{ // Case4 : new-Parameter Value of "APP_NAME" != old-Parameter Value of "APP_NAME"
 			admissionReview: []byte(`{
-				"kind": "AdmissionReview", 
-				"request": { 
-					"object": { 
-						"spec" : { 
-							"template": { 
-								"metadata" : { 
-									"name" : "new-template"} } } }, 
-					"oldObject": { 
-						"spec" : {
-							"template": { 
-								"metadata" : { 
-									"name" : "new-template"} } } } } }`),
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "APP_NAME",
+							"value": "new-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "new-image"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "APP_NAME",
+							"value": "old-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "old-image"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": [
+						  {
+							"metadata": {
+							  "name": "${APP_NAME}"
+							}
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
+			result: false,
+		},
+		{ // Case5 : Template Name && Parameter "NAME" values are same
+			admissionReview: []byte(`{
+				"kind": "AdmissionReview",
+				"request": {
+				  "object": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "new-image"
+						  }
+						]
+					  }
+					}
+				  },
+				  "oldObject": {
+					"spec": {
+					  "template": {
+						"metadata": {
+						  "name": "new-template"
+						},
+						"parameters": [
+						  {
+							"name": "NAME",
+							"value": "test-name"
+						  },
+						  {
+							"name": "IMAGE",
+							"value": "old-image"
+						  }
+						]
+					  }
+					},
+					"status": {
+					  "template": {
+						"objects": [
+						  {
+							"metadata": {
+							  "name": "${NAME}"
+							}
+						  },
+						  {
+							"metadata": {
+							  "name": "NoParameter"
+							}
+						  }
+						]
+					  }
+					}
+				  }
+				}
+			  }`),
 			result: true,
 		},
 	}
@@ -71,4 +251,5 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, s.result, Validate(req))
 	}
+
 }
